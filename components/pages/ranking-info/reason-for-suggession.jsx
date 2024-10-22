@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import React from "react";
 
 export const ReasonForSuggestion = ({ reasonData }) => {
@@ -11,9 +11,9 @@ export const ReasonForSuggestion = ({ reasonData }) => {
             {reasonData?.map((reason, idx) => (
                <span
                   key={idx}
-                  className='flex flex-row gap-2 text-sm font-normal items-start'
+                  className='flex flex-row gap-2 items-start content-color'
                >
-                  <Check size={16} className='text-success-text ' />
+                  <CheckCircle size={20} className='text-success-text ' />
                   <span className='max-w-md'>{reason}</span>
                </span>
             ))}

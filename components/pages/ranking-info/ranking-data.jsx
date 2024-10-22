@@ -40,9 +40,9 @@ export const RankingSection = ({ rankingData, companyName, analyse }) => {
                            />
                         </CardTitle>
                      </CardHeader>
-                     <CardContent className='max-w-xs '>
-                        <span className='font-medium'>Reason: </span>
-                        <span className=''>
+                     <CardContent className='max-w-xs  '>
+                        <span className='font-medium text-base '>Reason: </span>
+                        <span className='content-color line-clamp-3'>
                            {analyse[proposal].reasonForRank.join(", ")}
                         </span>
                      </CardContent>

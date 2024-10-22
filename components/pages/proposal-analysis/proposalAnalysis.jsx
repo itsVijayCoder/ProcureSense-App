@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, CheckCircle } from "lucide-react";
 import React from "react";
 
 export const ProposalAnalysis = ({ proposalAnalysisData, title }) => {
@@ -19,31 +19,31 @@ export const ProposalAnalysis = ({ proposalAnalysisData, title }) => {
                      Proposal - {idx + 1} Information
                   </legend>
                   <div className='flex flex-col gap-3 text-sm'>
-                     <div className='flex flex-row gap-1 w-full'>
-                        <span className='font-semibold w-2/12'>
-                           Company Name
-                        </span>
-                        <span className='w-10/12'>
+                     <div className='grid grid-cols-6 w-full'>
+                        <span className='content-heading '>Company Name</span>
+                        <span className='col-span-5 content-color'>
                            {proposal.name ? proposal.name : "None"}
                         </span>
                      </div>
-                     <div className='flex flex-row gap-1 w-full'>
-                        <span className='font-semibold w-2/12'>
+                     <div className='grid grid-cols-6 w-full'>
+                        <span className='content-heading '>
                            {title} Analyse
                         </span>
-                        <span className='w-10/12'>
+                        <span className='col-span-5 content-color space-y-1'>
                            {analysis.length > 0
                               ? analysis.map((analyse, idx) => (
-                                   <span
+                                   <div
                                       key={idx}
-                                      className='flex flex-row gap-2 items-start'
+                                      className='flex  gap-2 items-start'
                                    >
-                                      <Check
-                                         size={16}
-                                         className='text-success-text'
-                                      />
-                                      {analyse}
-                                   </span>
+                                      <span className=''>
+                                         <CheckCircle
+                                            size={16}
+                                            className=' size-4'
+                                         />
+                                      </span>
+                                      <span className=''>{analyse}</span>
+                                   </div>
                                 ))
                               : "None"}
                         </span>

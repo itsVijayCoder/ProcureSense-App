@@ -13,6 +13,9 @@ import {
    ChevronsLeft,
    ChevronLeft,
    ChevronRight,
+   PlusCircle,
+   Clock4,
+   LayoutTemplate,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -83,6 +86,29 @@ const DashboardLayout = ({ children }) => {
       setIsSidebarOpen(!isSidebarOpen);
    };
 
+   const navData = [
+      {
+         name: "Dashboard",
+         href: "/home",
+         icon: LayoutTemplate,
+      },
+      {
+         name: "All Analyse",
+         href: "/analysis",
+         icon: LineChart,
+      },
+      {
+         name: "Recent Analysis",
+         href: "/recent-analysis",
+         icon: Clock4,
+      },
+      {
+         name: "Recently Added",
+         href: "/recently-added",
+         icon: PlusCircle,
+      },
+   ];
+
    return (
       <div className='grid min-h-screen w-full md:grid-cols-[auto_1fr] lg:grid-cols-[auto_1fr]'>
          <div
@@ -122,14 +148,26 @@ const DashboardLayout = ({ children }) => {
                </div>
                <div className='flex-1'>
                   <nav className='grid items-start px-2 text-sm font-medium lg:px-4'>
-                     <Link
+                     {navData.map((item) => (
+                        <Link
+                           key={item.name}
+                           href={item.href}
+                           className={`flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
+                              pathname === item.href ? "text-primary" : ""
+                           }`}
+                        >
+                           <item.icon className='size-6' />
+                           {isSidebarOpen && item.name}
+                        </Link>
+                     ))}
+                     {/* <Link
                         href='/home'
                         className={`flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
                            pathname === "/home" ? "text-primary" : ""
                         }`}
                      >
-                        <Home className='size-6' />
-                        {isSidebarOpen && "Home"}
+                        <DashboardIcon className='size-6' />
+                        {isSidebarOpen && "Dashboard"}
                      </Link>
                      <Link
                         href='/analysis'
@@ -137,9 +175,9 @@ const DashboardLayout = ({ children }) => {
                            pathname === "/analysis" ? "text-primary" : ""
                         }`}
                      >
-                        <LineChart className='size-6' />
+                        <Clock4 className='size-6' />
                         {isSidebarOpen && "Analysis"}
-                     </Link>
+                     </Link> */}
                   </nav>
                </div>
                {isSidebarOpen ? (
