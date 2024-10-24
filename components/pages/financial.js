@@ -8,9 +8,20 @@ import {
    CardDescription,
    CardContent,
 } from "@/components/ui/card";
-import { Crown, SquareArrowOutUpRight, Check } from "lucide-react";
+import {
+   Crown,
+   SquareArrowOutUpRight,
+   Check,
+   Star,
+   AlignEndHorizontal,
+} from "lucide-react";
 import { dashboardStore } from "@/stores/dashboard.js";
 import { ProposalSidebar } from "./proposal-sidebar";
+import { RankingSection } from "@/components/pages/ranking-info/ranking-data";
+import { ReasonForSuggestion } from "@/components/pages/ranking-info/reason-for-suggession";
+import { SuggestedProposal } from "@/components/pages/ranking-info/suggested-proposal";
+import { QuotationCard } from "@/components/pages/financial-quotation/QuotationCard";
+import { ProposalAnalysis } from "@/components/pages/proposal-analysis/proposalAnalysis";
 
 const FinancialPage = () => {
    const { selectedFinancialAnalyseData } = dashboardStore();
@@ -37,9 +48,6 @@ const FinancialPage = () => {
    return (
       <>
          <div className='grid grid-cols-[auto,1fr] gap-4 '>
-            {/* <div className=' min-h-full mt-1  '>
-               <ProposalSidebar proposalData={proposalAnalyse} />
-            </div> */}
             <div className='w-full col-span-full'>
                <Card>
                   <CardHeader>
@@ -52,216 +60,62 @@ const FinancialPage = () => {
                   <CardContent>
                      <div className='flex flex-col gap-2'>
                         <form className='grid w-full items-start gap-6 overflow-auto pt-0'>
-                           <fieldset className='grid gap-6 rounded-lg border p-4'>
-                              <legend className='-ml-1 px-1 text-sm font-medium'>
-                                 Basic Metrics
-                              </legend>
-                              <div className='flex flex-col gap-3 text-sm'>
-                                 <div className='flex flex-row gap-1 w-full'>
-                                    <span className='font-semibold w-2/12'>
-                                       Average Quotion Value
-                                    </span>
-                                    <span className='w-10/12'>
-                                       {financialAnalyse.avgQuote}
-                                    </span>
-                                 </div>
-                                 <div className='flex flex-row gap-1'>
-                                    <span className='font-semibold w-2/12'>
-                                       Maximum Quotation Value
-                                    </span>
-                                    <span className='flex flex-row w-10/12'>
-                                       {financialAnalyse.maxQuote} -
-                                       <span
-                                          className='flex flex-row gap-2 items-center cursor-pointer hover:underline hover:text-primary capitalize'
-                                          onClick={() => {
-                                             handleSectionScroll(
-                                                `proposal${
-                                                   financialAnalyse.maxQuoteProposal +
-                                                   1
-                                                }`
-                                             );
-                                          }}
-                                       >
-                                          {fetchProposalCompanyName(
-                                             financialAnalyse.maxQuoteProposal
-                                          )}
-                                          <SquareArrowOutUpRight
-                                             size={14}
-                                             className='text-primary'
-                                          />
-                                       </span>
-                                    </span>
-                                 </div>
-                                 <div className='flex flex-row gap-1'>
-                                    <span className='font-semibold w-2/12'>
-                                       Minimum Quotation Value
-                                    </span>
-                                    <span className='flex flex-row w-10/12'>
-                                       {financialAnalyse.minQuote} -
-                                       <span
-                                          className='flex flex-row gap-2 items-center cursor-pointer hover:underline hover:text-primary capitalize'
-                                          onClick={() => {
-                                             handleSectionScroll(
-                                                `proposal${
-                                                   financialAnalyse.maxQuoteProposal +
-                                                   1
-                                                }`
-                                             );
-                                          }}
-                                       >
-                                          {fetchProposalCompanyName(
-                                             financialAnalyse.minQuoteProposal
-                                          )}
-                                          <SquareArrowOutUpRight
-                                             size={14}
-                                             className='text-primary'
-                                          />
-                                       </span>
-                                    </span>
-                                 </div>
+                           <fieldset className='fieldset'>
+                              <legend className='legend'>Basic Metrics</legend>
+
+                              <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
+                                 <QuotationCard
+                                    title='Maximum'
+                                    quoteAmount={financialAnalyse.maxQuote}
+                                    companyName={fetchProposalCompanyName}
+                                    quoteCompany={
+                                       financialAnalyse.maxQuoteProposal
+                                    }
+                                 />
+                                 <QuotationCard
+                                    title='Minimum'
+                                    companyName={fetchProposalCompanyName}
+                                    quoteAmount={financialAnalyse.minQuote}
+                                    quoteCompany={
+                                       financialAnalyse.minQuoteProposal
+                                    }
+                                 />
+
+                                 <QuotationCard
+                                    title='Average'
+                                    quoteAmount={financialAnalyse.avgQuote}
+                                 />
                               </div>
                            </fieldset>
-                           <fieldset className='grid gap-6 rounded-lg border p-4'>
-                              <legend className='-ml-1 px-1 text-sm font-medium'>
+
+                           <fieldset className='fieldset'>
+                              <legend className='legend'>
                                  Ranking Information
                               </legend>
                               <div className='flex flex-col gap-3 text-sm'>
-                                 <div className='flex flex-row gap-1 w-full items-start'>
-                                    <span className='flex flex-row gap-2 items-center font-semibold w-2/12'>
-                                       <Crown
-                                          size={16}
-                                          className='text-warning-text'
-                                       />
-                                       Suggested Proposal
-                                    </span>
-                                    <span className='w-10/12'>
-                                       <span className='flex flex-col gap-2 justify-start'>
-                                          <span
-                                             className='flex flex-row gap-2 items-center cursor-pointer hover:underline hover:text-primary capitalize'
-                                             onClick={() => {
-                                                handleSectionScroll(
-                                                   `proposal${
-                                                      overallFinanciallySuitableProposal +
-                                                      1
-                                                   }`
-                                                );
-                                             }}
-                                          >
-                                             {fetchProposalCompanyName(
-                                                overallFinanciallySuitableProposal
-                                             )}
-                                             <SquareArrowOutUpRight
-                                                size={14}
-                                                className='text-primary'
-                                             />
-                                          </span>
-                                       </span>
-                                    </span>
-                                 </div>
-                                 <div className='flex flex-row gap-1 w-full items-start'>
-                                    <span className='flex flex-row gap-2 items-center font-semibold w-2/12'>
-                                       Reason For Suggestion
-                                    </span>
-                                    <span className='flex flex-col gap-1 w-10/12'>
-                                       {reasonForFinancialSelection.map(
-                                          (reason, idx) => (
-                                             <span
-                                                key={idx}
-                                                className='flex flex-row gap-2 items-center'
-                                             >
-                                                <Check
-                                                   size={16}
-                                                   className='text-success-text'
-                                                />
-                                                {reason}
-                                             </span>
-                                          )
-                                       )}
-                                    </span>
-                                 </div>
-                                 <div className='flex flex-row gap-1 items-start w-full'>
-                                    <span className='font-semibold w-2/12'>
-                                       Ranking
-                                    </span>
-                                    <span className='flex flex-col gap-2 w-10/12 capitalize'>
-                                       {financialRanking.map(
-                                          (proposal, idx) => (
-                                             <span
-                                                key={idx}
-                                                className='flex flex-col gap-2'
-                                             >
-                                                <span
-                                                   className='flex flex-row gap-2 items-center cursor-pointer hover:underline hover:text-primary capitalize'
-                                                   onClick={() => {
-                                                      handleSectionScroll(
-                                                         `proposal${
-                                                            proposal + 1
-                                                         }`
-                                                      );
-                                                   }}
-                                                >
-                                                   {idx + 1} -{" "}
-                                                   {fetchProposalCompanyName(
-                                                      proposal
-                                                   )}
-                                                   <SquareArrowOutUpRight
-                                                      size={14}
-                                                      className='text-primary'
-                                                   />
-                                                </span>
-                                             </span>
-                                          )
-                                       )}
-                                    </span>
-                                 </div>
+                                 <SuggestedProposal
+                                    companyName={fetchProposalCompanyName}
+                                    overallSuitableProposal={
+                                       overallFinanciallySuitableProposal
+                                    }
+                                 >
+                                    <ReasonForSuggestion
+                                       reasonData={reasonForFinancialSelection}
+                                    />
+                                 </SuggestedProposal>
+
+                                 <RankingSection
+                                    rankingData={financialRanking}
+                                    companyName={fetchProposalCompanyName}
+                                    analyse={proposalAnalyse}
+                                 />
                               </div>
                            </fieldset>
-                           {proposalAnalyse.map((proposal, idx) => (
-                              <fieldset
-                                 key={idx}
-                                 id={`proposal${idx + 1}`}
-                                 className='grid gap-6 rounded-lg border p-4'
-                              >
-                                 <legend className='-ml-1 px-1 text-sm font-medium'>
-                                    Proposal - {idx + 1} Information
-                                 </legend>
-                                 <div className='flex flex-col gap-3 text-sm'>
-                                    <div className='flex flex-row gap-1 w-full'>
-                                       <span className='font-semibold w-2/12'>
-                                          Company Name
-                                       </span>
-                                       <span className='w-10/12'>
-                                          {proposal.name
-                                             ? proposal.name
-                                             : "None"}
-                                       </span>
-                                    </div>
-                                    <div className='flex flex-row gap-1 w-full'>
-                                       <span className='font-semibold w-2/12'>
-                                          Financial Analyse
-                                       </span>
-                                       <span className='w-10/12'>
-                                          {proposal.financialAnalysis.length > 0
-                                             ? proposal.financialAnalysis.map(
-                                                  (analyse, idx) => (
-                                                     <span
-                                                        key={idx}
-                                                        className='flex flex-row gap-2 items-start'
-                                                     >
-                                                        <Check
-                                                           size={16}
-                                                           className='text-success-text'
-                                                        />
-                                                        {analyse}
-                                                     </span>
-                                                  )
-                                               )
-                                             : "None"}
-                                       </span>
-                                    </div>
-                                 </div>
-                              </fieldset>
-                           ))}
+
+                           <ProposalAnalysis
+                              proposalAnalysisData={proposalAnalyse}
+                              title='Financial'
+                           />
                         </form>
                      </div>
                   </CardContent>
