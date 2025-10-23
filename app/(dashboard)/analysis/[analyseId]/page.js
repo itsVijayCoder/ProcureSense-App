@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowUp01, ArrowUpNarrowWide, Plus } from "lucide-react";
 import { useEffect, useState, useRef } from "react";
+import { useParams } from "next/navigation";
 import {
    Select,
    SelectContent,
@@ -23,6 +24,9 @@ import { ProposalSidebar } from "@/components/pages/proposal-sidebar";
 import { ScrollToTop } from "@/components/scroll-to-top";
 
 const AnalysisPage = () => {
+   const params = useParams();
+   const analyseIdFromUrl = params.analyseId;
+
    const {
       analyseList,
       selectedAnalyseId,
@@ -35,7 +39,9 @@ const AnalysisPage = () => {
    } = dashboardStore();
    const useEffectRan = useRef(false);
 
-   const [analyseId, setAnalyseId] = useState(selectedAnalyseId);
+   const [analyseId, setAnalyseId] = useState(
+      analyseIdFromUrl || selectedAnalyseId
+   );
    const [isLoading, setIsLoading] = useState(false);
    const [isStoreUpdated, setIsStoreUpdated] = useState(false);
    const filteredAnalyseList = analyseList.filter(
@@ -118,12 +124,9 @@ const AnalysisPage = () => {
    useEffect(() => {
       if (!useEffectRan.current) {
          const fetchAnalyseData = async () => {
-            if (
-               filteredAnalyseList
-                  .map((analyse) => analyse.id)
-                  .includes(selectedAnalyseId)
-            ) {
-               await fetchSelectedAnalyseData(selectedAnalyseId);
+            if (analyseIdFromUrl) {
+               setAnalyseId(analyseIdFromUrl);
+               await fetchSelectedAnalyseData(analyseIdFromUrl);
             } else {
                setAnalyseId(null);
             }
@@ -131,7 +134,27 @@ const AnalysisPage = () => {
          fetchAnalyseData();
          useEffectRan.current = true;
       }
-   }, []);
+   }, [analyseIdFromUrl]);
+
+   // Handle hash fragment scrolling after data is loaded
+   useEffect(() => {
+      if (isStoreUpdated && !isLoading) {
+         const hash = window.location.hash;
+         if (hash) {
+            const elementId = hash.substring(1); // Remove the # symbol
+            setTimeout(() => {
+               const element = document.getElementById(elementId);
+               if (element) {
+                  const y =
+                     element.getBoundingClientRect().top +
+                     window.pageYOffset -
+                     130;
+                  window.scrollTo({ top: y, behavior: "smooth" });
+               }
+            }, 300); // Wait a bit longer for content to render
+         }
+      }
+   }, [isStoreUpdated, isLoading]);
 
    return (
       <>

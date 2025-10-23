@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
    Plus,
    SquareArrowOutUpRight,
@@ -44,8 +44,9 @@ import { addAnalyseStore } from "@/stores/addAnalyse";
 import { Input } from "@/components/ui/input";
 
 const AnalysisPage = () => {
-   const pageLimit = 4;
+   const pageLimit = 5;
    const router = useRouter();
+   const searchParams = useSearchParams();
    const { analyseList, totalAnalyse, selectedAnalyseId } = dashboardStore();
    const { setAnalyseList, setTotalAnalyse, setSelectedAnalyseId } =
       dashboardStore();
@@ -160,6 +161,18 @@ const AnalysisPage = () => {
       setSearchTerm(e.target.value);
       setCurrentPage(1);
    };
+
+   // Refetch data on component mount or when refresh parameter is present
+   useEffect(() => {
+      const shouldRefresh = searchParams.get("refresh") === "true";
+      if (shouldRefresh || analyseList.length === 0) {
+         refreshAnalyseList();
+         // Remove the refresh parameter from URL after fetching
+         if (shouldRefresh) {
+            router.replace("/analysis");
+         }
+      }
+   }, [searchParams]); // Only depend on searchParams to avoid infinite loops
 
    return (
       <>

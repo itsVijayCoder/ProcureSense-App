@@ -1,14 +1,18 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useCallback } from "react";
 
 export function useScrollWithOffset(offset = 0) {
    const router = useRouter();
+   const pathname = usePathname();
 
    const scrollToElement = useCallback(
       (elementId) => {
-         router.push(`/analysis/#${elementId}`);
+         // Get the current page path and append the hash
+         const currentPath = pathname;
+         router.push(`${currentPath}#${elementId}`);
+
          setTimeout(() => {
             const element = document.getElementById(elementId);
             if (element) {
@@ -20,7 +24,7 @@ export function useScrollWithOffset(offset = 0) {
             }
          }, 100);
       },
-      [router, offset]
+      [router, pathname, offset]
    );
 
    return scrollToElement;
