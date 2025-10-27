@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
    Home,
@@ -287,12 +288,33 @@ const DashboardLayout = ({ children }) => {
                   </SheetContent>
                </Sheet>
                <div className='w-full flex-1'></div>
+               {/* Brand logo */}
+               {/* <div className='hidden md:flex items-center'>
+                  <Image
+                     src='/images/redaa-logo.png'
+                     alt='Redaa logo'
+                     width={120}
+                     height={28}
+                     className='h-10 w-auto'
+                     priority
+                  />
+               </div> */}
                <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                     <Avatar>
+                     {/* <Avatar>
                         <AvatarImage src='https://api.dicebear.com/8.x/adventurer-neutral/svg?seed=Toby&backgroundColor=ecad80' />
                         <AvatarFallback>SX</AvatarFallback>
-                     </Avatar>
+                     </Avatar> */}
+                     <div className='hidden md:flex items-center'>
+                        <Image
+                           src='/images/redaa-logo.png'
+                           alt='Redaa logo'
+                           width={120}
+                           height={28}
+                           className='h-12 w-auto'
+                           priority
+                        />
+                     </div>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align='end'>
                      <DropdownMenuItem>
