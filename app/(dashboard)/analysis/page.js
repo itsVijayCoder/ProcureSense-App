@@ -58,7 +58,7 @@ const AnalysisPage = () => {
    const [totalPages, setTotalPages] = useState(
       Math.ceil(totalAnalyse / pageLimit)
    );
-   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+   const [deleteAnalyseId, setDeleteAnalyseId] = useState(null);
    const [searchTerm, setSearchTerm] = useState("");
 
    const handlePaginatePrev = () => {
@@ -111,7 +111,7 @@ const AnalysisPage = () => {
          await deleteAnalyse(id);
          toast.success("Analysis deleted successfully !");
          refreshAnalyseList();
-         setIsDeleteModalOpen(false);
+         setDeleteAnalyseId(null);
       } catch (error) {
          console.log(error);
          toast.error("Failed to delete analysis");
@@ -258,15 +258,17 @@ const AnalysisPage = () => {
                                        variant='destructive'
                                        className='flex flex-row gap-2'
                                        onClick={() => {
-                                          setIsDeleteModalOpen(true);
+                                          setDeleteAnalyseId(analyse.id);
                                        }}
                                     >
                                        <Trash2 size={16} />
                                        <span>Delete</span>
                                     </Button>
                                     <AlertDialog
-                                       open={isDeleteModalOpen}
-                                       onOpenChange={setIsDeleteModalOpen}
+                                       open={deleteAnalyseId === analyse.id}
+                                       onOpenChange={(open) => {
+                                          if (!open) setDeleteAnalyseId(null);
+                                       }}
                                     >
                                        <AlertDialogContent>
                                           <AlertDialogHeader>
@@ -284,9 +286,7 @@ const AnalysisPage = () => {
                                              <AlertDialogCancel
                                                 variant='outline'
                                                 onClick={() => {
-                                                   setIsDeleteModalOpen(
-                                                      !isDeleteModalOpen
-                                                   );
+                                                   setDeleteAnalyseId(null);
                                                 }}
                                              >
                                                 Cancel
