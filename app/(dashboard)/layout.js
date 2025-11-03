@@ -81,7 +81,7 @@ const DashboardLayout = ({ children }) => {
          useEffectRan.current = true;
          fetchData();
       }
-   }, []);
+   }, [setAnalyseList, setSelectedAnalyseId, setTotalAnalyse]);
 
    const toggleSidebar = () => {
       setIsSidebarOpen(!isSidebarOpen);

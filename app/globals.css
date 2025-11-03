@@ -42,24 +42,35 @@ body::-webkit-scrollbar {
 @layer base {
    :root {
       --background: 0 0% 100%;
-      --foreground: 222.2 84% 4.9%;
+      --foreground: 222 47% 11%;
+      --surface: 210 33% 99%;
+      --surface-muted: 216 28% 96%;
+      --surface-subtle: 216 33% 92%;
       --card: 0 0% 100%;
-      --card-foreground: 222.2 84% 4.9%;
+      --card-foreground: 222 47% 11%;
       --popover: 0 0% 100%;
-      --popover-foreground: 222.2 84% 4.9%;
+      --popover-foreground: 222 47% 11%;
       --primary: 221.2 83.2% 53.3%;
       --primary-foreground: 210 40% 98%;
       --secondary: 210 40% 96.1%;
-      --secondary-foreground: 222.2 47.4% 11.2%;
-      --muted: 210 40% 96.1%;
+      --secondary-foreground: 222 47% 11%;
+      --muted: 214 32% 92%;
       --muted-foreground: 215.4 16.3% 46.9%;
-      --accent: 210 40% 96.1%;
-      --accent-foreground: 222.2 47.4% 11.2%;
+      --accent: 205 94% 90%;
+      --accent-foreground: 222 47% 11%;
+      --info: 207 90% 54%;
+      --info-foreground: 210 40% 98%;
+      --success: 152 76% 38%;
+      --success-foreground: 140 33% 96%;
+      --warning: 43 96% 56%;
+      --warning-foreground: 30 80% 15%;
       --destructive: 0 84.2% 60.2%;
       --destructive-foreground: 210 40% 98%;
       --border: 214.3 31.8% 91.4%;
       --input: 214.3 31.8% 91.4%;
       --ring: 221.2 83.2% 53.3%;
+      --shadow-color: 210 40% 16% / 0.08;
+      --shadow-strong: 222 47% 11% / 0.14;
       --radius: 0.75rem;
       --chart-1: 221.2 83.2% 53.3%;
       --chart-2: 173 58% 39%;
@@ -69,11 +80,14 @@ body::-webkit-scrollbar {
    }
 
    .dark {
-      --background: 222.2 84% 4.9%;
+      --background: 222.2 25% 10%;
       --foreground: 210 40% 98%;
-      --card: 222.2 84% 4.9%;
+      --surface: 223 23% 16%;
+      --surface-muted: 222 19% 12%;
+      --surface-subtle: 224 16% 18%;
+      --card: 222.2 25% 13%;
       --card-foreground: 210 40% 98%;
-      --popover: 222.2 84% 4.9%;
+      --popover: 222.2 25% 13%;
       --popover-foreground: 210 40% 98%;
       --primary: 217.2 91.2% 59.8%;
       --primary-foreground: 222.2 47.4% 11.2%;
@@ -81,13 +95,21 @@ body::-webkit-scrollbar {
       --secondary-foreground: 210 40% 98%;
       --muted: 217.2 32.6% 17.5%;
       --muted-foreground: 215 20.2% 65.1%;
-      --accent: 217.2 32.6% 17.5%;
+      --accent: 217 32% 19%;
       --accent-foreground: 210 40% 98%;
+      --info: 213 88% 68%;
+      --info-foreground: 222 47% 11%;
+      --success: 152 64% 42%;
+      --success-foreground: 150 25% 92%;
+      --warning: 37 92% 54%;
+      --warning-foreground: 30 80% 15%;
       --destructive: 0 62.8% 30.6%;
       --destructive-foreground: 210 40% 98%;
       --border: 217.2 32.6% 17.5%;
       --input: 217.2 32.6% 17.5%;
       --ring: 224.3 76.3% 48%;
+      --shadow-color: 210 40% 3% / 0.45;
+      --shadow-strong: 210 40% 2% / 0.65;
       --chart-1: 220 70% 50%;
       --chart-2: 160 60% 45%;
       --chart-3: 30 80% 55%;
@@ -96,49 +118,188 @@ body::-webkit-scrollbar {
    }
 }
 
-.loader {
-   height: 40px;
-   aspect-ratio: 1.5;
-   --c: no-repeat linear-gradient(hsl(var(--primary)) 0 0);
-   background: var(--c), var(--c), var(--c), var(--c);
-   background-size: 33.4% 50%;
-   animation: l6 2s infinite linear;
+@layer utilities {
+   .elevated-card {
+      background: hsl(var(--card));
+      box-shadow: 0 12px 32px hsl(var(--shadow-color));
+      border-radius: var(--radius);
+      border: 1px solid hsl(var(--border));
+   }
+
+   .surface-muted {
+      background: hsl(var(--surface-muted));
+   }
+
+   .glass-blur {
+      backdrop-filter: blur(14px);
+      background: linear-gradient(
+            135deg,
+            hsl(var(--surface) / 0.75) 0%,
+            hsl(var(--surface-subtle) / 0.6) 100%
+         )
+         border-box;
+      border: 1px solid hsl(var(--border) / 0.7);
+   }
+
+   .fade-in {
+      animation: fade-in 260ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+   }
+
+   .fade-up {
+      animation: fade-up 360ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+   }
+
+   .scale-in {
+      animation: scale-in 260ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+   }
+
+   .stagger-parent > * {
+      opacity: 0;
+      transform: translateY(8px);
+      animation: fade-up 360ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+   }
+
+   .stagger-parent > *:nth-child(1) {
+      animation-delay: 40ms;
+   }
+
+   .stagger-parent > *:nth-child(2) {
+      animation-delay: 120ms;
+   }
+
+   .stagger-parent > *:nth-child(3) {
+      animation-delay: 200ms;
+   }
+
+   .stagger-parent > *:nth-child(4) {
+      animation-delay: 280ms;
+   }
+
+   .stagger-parent > *:nth-child(n + 5) {
+      animation-delay: 320ms;
+   }
+
+   .skeleton {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(
+         90deg,
+         hsl(var(--surface-muted)),
+         hsl(var(--surface))
+      );
+   }
+
+   .skeleton::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+         90deg,
+         transparent,
+         hsl(var(--surface-subtle) / 0.6),
+         transparent
+      );
+      transform: translateX(-100%);
+      animation: skeleton-shimmer 1.4s ease-in-out infinite;
+   }
 }
 
-@keyframes l6 {
+@keyframes fade-in {
+   from {
+      opacity: 0;
+   }
+
+   to {
+      opacity: 1;
+   }
+}
+
+@keyframes fade-up {
+   from {
+      opacity: 0;
+      transform: translateY(12px);
+   }
+
+   to {
+      opacity: 1;
+      transform: translateY(0);
+   }
+}
+
+@keyframes scale-in {
+   from {
+      opacity: 0;
+      transform: scale(0.96);
+   }
+
+   to {
+      opacity: 1;
+      transform: scale(1);
+   }
+}
+
+@keyframes skeleton-shimmer {
    0% {
-      background-position: 0 0, 50% 0, 0 100%, 50% 100%;
-   }
-
-   12.5% {
-      background-position: 0 0, 100% 0, 0 100%, 50% 100%;
-   }
-
-   25% {
-      background-position: 0 0, 100% 0, 0 100%, 50% 0;
-   }
-
-   37.5% {
-      background-position: 0 0, 100% 0, 50% 100%, 50% 0;
-   }
-
-   50% {
-      background-position: 0 100%, 100% 0, 50% 100%, 50% 0;
-   }
-
-   62.5% {
-      background-position: 0 100%, 100% 0, 50% 100%, 0 0;
-   }
-
-   75% {
-      background-position: 0 100%, 100% 100%, 50% 100%, 0 0;
-   }
-
-   87.5% {
-      background-position: 0 100%, 100% 100%, 50% 0, 0 0;
+      transform: translateX(-100%);
    }
 
    100% {
-      background-position: 0 100%, 50% 100%, 50% 0, 0 0;
+      transform: translateX(100%);
+   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+   .fade-in,
+   .fade-up,
+   .scale-in,
+   .stagger-parent > *,
+   .skeleton::after {
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 1ms !important;
+   }
+}
+
+.loader {
+   position: relative;
+   width: 3.75rem;
+   height: 3.75rem;
+}
+
+.loader::before,
+.loader::after {
+   content: "";
+   position: absolute;
+   inset: 0;
+   border-radius: 50%;
+   border: 3px solid transparent;
+   mix-blend-mode: screen;
+}
+
+.loader::before {
+   border-top-color: hsl(var(--primary));
+   border-right-color: hsl(var(--primary));
+   animation: orbit 900ms linear infinite;
+}
+
+.loader::after {
+   border-bottom-color: hsl(var(--accent));
+   border-left-color: hsl(var(--accent));
+   animation: orbit 1200ms linear infinite reverse;
+}
+
+@keyframes orbit {
+   0% {
+      transform: rotate(0deg) scale(0.8);
+      opacity: 0.65;
+   }
+
+   50% {
+      opacity: 1;
+   }
+
+   100% {
+      transform: rotate(360deg) scale(1);
+      opacity: 0.65;
    }
 }

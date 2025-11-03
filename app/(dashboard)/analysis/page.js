@@ -10,7 +10,7 @@ import {
    Undo,
    Search,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -47,7 +47,7 @@ const AnalysisPage = () => {
    const pageLimit = 5;
    const router = useRouter();
    const searchParams = useSearchParams();
-   const { analyseList, totalAnalyse, selectedAnalyseId } = dashboardStore();
+   const { analyseList } = dashboardStore();
    const { setAnalyseList, setTotalAnalyse, setSelectedAnalyseId } =
       dashboardStore();
    const { setAnalyseId, setStage } = addAnalyseStore();
@@ -55,19 +55,20 @@ const AnalysisPage = () => {
    const [isLoading, setIsLoading] = useState(false);
    const [currentPage, setCurrentPage] = useState(1);
    const [paginatedAnalyseList, setPaginatedAnalyseList] = useState([]);
-   const [totalPages, setTotalPages] = useState(
-      Math.ceil(totalAnalyse / pageLimit)
-   );
-   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+   const [totalPages, setTotalPages] = useState(1);
    const [searchTerm, setSearchTerm] = useState("");
+   const [deleteAnalyseId, setDeleteAnalyseId] = useState(null);
 
    const handlePaginatePrev = () => {
-      if (currentPage > 1) setCurrentPage(currentPage - 1);
+      if (currentPage > 1) {
+         setCurrentPage((prevPage) => prevPage - 1);
+      }
    };
 
    const handlePaginateNext = () => {
-      if (currentPage < Math.ceil(totalAnalyse / pageLimit))
-         setCurrentPage(currentPage + 1);
+      if (currentPage < totalPages) {
+         setCurrentPage((prevPage) => prevPage + 1);
+      }
    };
 
    const handleView = (id) => () => {
@@ -92,26 +93,28 @@ const AnalysisPage = () => {
       }
    };
 
-   const refreshAnalyseList = async () => {
+   const refreshAnalyseList = useCallback(async () => {
       setIsLoading(true);
       try {
          const allAnalyse = await fetchAllAnalyse();
          setAnalyseList(allAnalyse.data);
-         setSelectedAnalyseId(allAnalyse.data[0].id);
+         if (allAnalyse.data.length > 0) {
+            setSelectedAnalyseId(allAnalyse.data[0].id);
+         }
          setTotalAnalyse(allAnalyse.total);
          setIsLoading(false);
       } catch (error) {
          console.log(error);
          setIsLoading(false);
       }
-   };
+   }, [setAnalyseList, setSelectedAnalyseId, setTotalAnalyse]);
 
    const handleDelete = async (id) => {
       try {
          await deleteAnalyse(id);
          toast.success("Analysis deleted successfully !");
-         refreshAnalyseList();
-         setIsDeleteModalOpen(false);
+         await refreshAnalyseList();
+         setDeleteAnalyseId(null);
       } catch (error) {
          console.log(error);
          toast.error("Failed to delete analysis");
@@ -152,7 +155,15 @@ const AnalysisPage = () => {
          const startIndex = (currentPage - 1) * pageLimit;
          const endIndex = startIndex + pageLimit;
          setPaginatedAnalyseList(filteredList.slice(startIndex, endIndex));
-         setTotalPages(Math.ceil(filteredList.length / pageLimit));
+         const computedPages =
+            filteredList.length === 0
+               ? 1
+               : Math.ceil(filteredList.length / pageLimit);
+         if (currentPage > computedPages) {
+            setCurrentPage(computedPages);
+            return;
+         }
+         setTotalPages(computedPages);
       };
       paginateAnalyse();
    }, [currentPage, analyseList, searchTerm]);
@@ -172,7 +183,7 @@ const AnalysisPage = () => {
             router.replace("/analysis");
          }
       }
-   }, [searchParams]); // Only depend on searchParams to avoid infinite loops
+   }, [analyseList.length, refreshAnalyseList, router, searchParams]);
 
    return (
       <>
@@ -258,15 +269,17 @@ const AnalysisPage = () => {
                                        variant='destructive'
                                        className='flex flex-row gap-2'
                                        onClick={() => {
-                                          setIsDeleteModalOpen(true);
+                                          setDeleteAnalyseId(analyse.id);
                                        }}
                                     >
                                        <Trash2 size={16} />
                                        <span>Delete</span>
                                     </Button>
                                     <AlertDialog
-                                       open={isDeleteModalOpen}
-                                       onOpenChange={setIsDeleteModalOpen}
+                                       open={deleteAnalyseId === analyse.id}
+                                       onOpenChange={(open) => {
+                                          if (!open) setDeleteAnalyseId(null);
+                                       }}
                                     >
                                        <AlertDialogContent>
                                           <AlertDialogHeader>
@@ -284,9 +297,7 @@ const AnalysisPage = () => {
                                              <AlertDialogCancel
                                                 variant='outline'
                                                 onClick={() => {
-                                                   setIsDeleteModalOpen(
-                                                      !isDeleteModalOpen
-                                                   );
+                                                   setDeleteAnalyseId(null);
                                                 }}
                                              >
                                                 Cancel
@@ -354,15 +365,13 @@ const AnalysisPage = () => {
                      <PaginationItem>
                         <PaginationPrevious
                            onClick={() => handlePaginatePrev()}
-                           disabled={currentPage > 1}
+                           disabled={currentPage === 1}
                         />
                      </PaginationItem>
                      <PaginationItem>
                         <PaginationNext
                            onClick={() => handlePaginateNext()}
-                           disabled={
-                              currentPage < Math.ceil(totalAnalyse / pageLimit)
-                           }
+                           disabled={currentPage >= totalPages}
                         />
                      </PaginationItem>
                   </PaginationContent>
