@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
    ChevronRight,
    ChevronLeft,
@@ -29,10 +29,10 @@ const Step4Page = ({
    isLoading,
 }) => {
    const { proposalData } = addAnalyseStore();
-   const useEffectRan = useRef(false);
+   const totalProposals = Array.isArray(proposalData) ? proposalData.length : 0;
    const [currentProposal, setCurrentProposal] = useState(0);
    const [currentProposalData, setCurrentProposalData] = useState(
-      proposalData[currentProposal]
+      totalProposals > 0 ? proposalData[0] : null
    );
 
    const [companyName, setCompanyName] = useState("");
@@ -40,45 +40,93 @@ const Step4Page = ({
    const [companyAddress, setCompanyAddress] = useState("");
    const [companyEmail, setCompanyEmail] = useState("");
    const [companyWebsite, setCompanyWebsite] = useState("");
-   const [termsConditions, setTermsConditions] = useState([]);
-   const [paymentTerms, setPaymentTerms] = useState([]);
-   const [deliveryTerms, setDeliveryTerms] = useState([]);
-   const [implementationDetails, setImplementationDetails] = useState([]);
+   const [termsConditions, setTermsConditions] = useState("");
+   const [paymentTerms, setPaymentTerms] = useState("");
+   const [deliveryTerms, setDeliveryTerms] = useState("");
+   const [implementationDetails, setImplementationDetails] = useState("");
    const [scopeOfWork, setScopeOfWork] = useState([]);
-   const [keyBenefits, setKeyBenefits] = useState([]);
+   const [keyBenefits, setKeyBenefits] = useState("");
    const [contactDetail, setContactDetail] = useState("");
    const [submittedBy, setSubmittedBy] = useState("");
 
    const handleNextProposal = () => {
-      if (currentProposal === proposalData.length - 1) handleNext();
-      setCurrentProposal(currentProposal + 1);
-      setCurrentProposalData(proposalData[currentProposal + 1]);
-      setProposalData(proposalData[currentProposal + 1]);
+      if (totalProposals === 0) {
+         return;
+      }
+      if (currentProposal >= totalProposals - 1) {
+         handleNext();
+         return;
+      }
+      setCurrentProposal((prev) => prev + 1);
    };
 
    const handlePreviousProposal = () => {
-      if (currentProposal === 0) handlePrevious();
-      setCurrentProposal(currentProposal - 1);
-      setCurrentProposalData(proposalData[currentProposal - 1]);
-      setProposalData(proposalData[currentProposal - 1]);
+      if (totalProposals === 0) {
+         return;
+      }
+      if (currentProposal === 0) {
+         handlePrevious();
+         return;
+      }
+      setCurrentProposal((prev) => prev - 1);
    };
 
-   const handleRestoreDefault = () => {
-      setCompanyName(currentProposalData.companyName);
-      setSubmissionDate(currentProposalData.submissionDate);
-      setCompanyAddress(currentProposalData.companyAddress);
-      setCompanyEmail(currentProposalData.companyEmail);
-      setCompanyWebsite(currentProposalData.companyWebsite);
-      setTermsConditions(currentProposalData?.termsConditions.join("\n"));
-      setPaymentTerms(currentProposalData?.paymentTerms.join("\n"));
-      setDeliveryTerms(currentProposalData?.deliveryTerms.join("\n"));
-      setImplementationDetails(
-         currentProposalData?.proposalImplementation.join("\n")
+   const applyProposalToForm = useCallback((proposal) => {
+      if (!proposal) {
+         return;
+      }
+      setCompanyName(proposal.companyName || "");
+      setSubmissionDate(proposal.submissionDate || "");
+      setCompanyAddress(proposal.companyAddress || "");
+      setCompanyEmail(proposal.companyEmail || "");
+      setCompanyWebsite(proposal.companyWebsite || "");
+      setTermsConditions(
+         Array.isArray(proposal?.termsConditions)
+            ? proposal.termsConditions.join("\n")
+            : proposal?.termsConditions || ""
       );
-      setScopeOfWork(currentProposalData.scopeOfWork);
-      setKeyBenefits(currentProposalData?.keyBenefits.join("\n"));
-      setContactDetail(currentProposalData.contactInformation.contactDetail);
-      setSubmittedBy(currentProposalData.contactInformation.submittedBy);
+      setPaymentTerms(
+         Array.isArray(proposal?.paymentTerms)
+            ? proposal.paymentTerms.join("\n")
+            : proposal?.paymentTerms || ""
+      );
+      setDeliveryTerms(
+         Array.isArray(proposal?.deliveryTerms)
+            ? proposal.deliveryTerms.join("\n")
+            : proposal?.deliveryTerms || ""
+      );
+      setImplementationDetails(
+         Array.isArray(proposal?.proposalImplementation)
+            ? proposal.proposalImplementation.join("\n")
+            : proposal?.proposalImplementation || ""
+      );
+      setScopeOfWork(
+         Array.isArray(proposal.scopeOfWork) ? proposal.scopeOfWork : []
+      );
+      setKeyBenefits(
+         Array.isArray(proposal?.keyBenefits)
+            ? proposal.keyBenefits.join("\n")
+            : proposal?.keyBenefits || ""
+      );
+      setContactDetail(proposal?.contactInformation?.contactDetail || "");
+      setSubmittedBy(proposal?.contactInformation?.submittedBy || "");
+   }, []);
+
+   const toArrayFromMultiline = useCallback((value, fallback = []) => {
+      if (typeof value === "string") {
+         const trimmed = value
+            .split("\n")
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+         if (trimmed.length > 0) {
+            return trimmed;
+         }
+      }
+      return Array.isArray(fallback) ? fallback : [];
+   }, []);
+
+   const handleRestoreDefault = () => {
+      applyProposalToForm(currentProposalData);
    };
 
    const handleScopeOfWorkChange = (idx, key, value) => {
@@ -90,68 +138,69 @@ const Step4Page = ({
       });
    };
 
-   const setProposalData = (proposalData) => {
-      if (proposalData) {
-         setCompanyName(proposalData.companyName);
-         setSubmissionDate(proposalData.submissionDate);
-         setCompanyAddress(proposalData.companyAddress);
-         setCompanyEmail(proposalData.companyEmail);
-         setCompanyWebsite(proposalData.companyWebsite);
-         setTermsConditions(proposalData?.termsConditions.join("\n"));
-         setPaymentTerms(proposalData?.paymentTerms.join("\n"));
-         setDeliveryTerms(proposalData?.deliveryTerms.join("\n"));
-         setImplementationDetails(
-            proposalData?.proposalImplementation.join("\n")
-         );
-         setScopeOfWork(proposalData.scopeOfWork);
-         setKeyBenefits(proposalData?.keyBenefits.join("\n"));
-         setContactDetail(proposalData.contactInformation.contactDetail);
-         setSubmittedBy(proposalData.contactInformation.submittedBy);
+   useEffect(() => {
+      if (totalProposals === 0) {
+         return;
       }
-   };
+      const safeIndex = Math.min(currentProposal, totalProposals - 1);
+      if (safeIndex !== currentProposal) {
+         setCurrentProposal(safeIndex);
+         return;
+      }
+      const proposal = proposalData[safeIndex];
+      if (!proposal) {
+         return;
+      }
+      setCurrentProposalData(proposal);
+      applyProposalToForm(proposal);
+   }, [applyProposalToForm, currentProposal, proposalData, totalProposals]);
 
    useEffect(() => {
-      if (!useEffectRan.current) {
-         setCurrentProposalData(proposalData[currentProposal]);
-         setProposalData(proposalData[currentProposal]);
-         useEffectRan.current = true;
+      if (totalProposals === 0) {
+         return;
       }
-   }, []);
-
-   useEffect(() => {
-      let payload = proposalData;
-      payload[currentProposal] = {
+      const existingProposal = proposalData[currentProposal];
+      if (!existingProposal) {
+         return;
+      }
+      const updatedProposal = {
+         ...existingProposal,
          companyName,
          submissionDate,
          companyAddress,
          companyEmail,
          companyWebsite,
-         termsConditions:
-            termsConditions.length > 0
-               ? termsConditions.split("\n")
-               : payload[currentProposal]?.termsConditions,
-         paymentTerms:
-            paymentTerms.length > 0
-               ? paymentTerms.split("\n")
-               : payload[currentProposal]?.paymentTerms,
-         deliveryTerms:
-            deliveryTerms.length > 0
-               ? deliveryTerms.split("\n")
-               : payload[currentProposal]?.deliveryTerms,
-         proposalImplementation:
-            implementationDetails.length > 0
-               ? implementationDetails.split("\n")
-               : payload[currentProposal]?.implementationDetails,
+         termsConditions: toArrayFromMultiline(
+            termsConditions,
+            existingProposal.termsConditions
+         ),
+         paymentTerms: toArrayFromMultiline(
+            paymentTerms,
+            existingProposal.paymentTerms
+         ),
+         deliveryTerms: toArrayFromMultiline(
+            deliveryTerms,
+            existingProposal.deliveryTerms
+         ),
+         proposalImplementation: toArrayFromMultiline(
+            implementationDetails,
+            existingProposal.proposalImplementation
+         ),
          scopeOfWork,
-         keyBenefits:
-            keyBenefits.length > 0
-               ? keyBenefits.split("\n")
-               : payload[currentProposal]?.keyBenefits,
+         keyBenefits: toArrayFromMultiline(
+            keyBenefits,
+            existingProposal.keyBenefits
+         ),
          contactInformation: {
+            ...existingProposal.contactInformation,
             contactDetail,
             submittedBy,
          },
       };
+
+      const payload = proposalData.map((proposal, index) =>
+         index === currentProposal ? updatedProposal : proposal
+      );
       handleProposalAnalyseDataChange(payload);
    }, [
       companyName,
@@ -167,6 +216,11 @@ const Step4Page = ({
       implementationDetails,
       scopeOfWork,
       keyBenefits,
+      currentProposal,
+      handleProposalAnalyseDataChange,
+      proposalData,
+      toArrayFromMultiline,
+      totalProposals,
    ]);
 
    return (

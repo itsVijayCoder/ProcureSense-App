@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowUp, ArrowUp01, ArrowUpNarrowWide, Plus } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import {
    Select,
@@ -66,60 +66,71 @@ const AnalysisPage = () => {
       }
    };
 
-   const handleAnalyseSelection = async (id) => {
-      setAnalyseId(id);
-      await fetchSelectedAnalyseData(id);
-   };
+   const fetchSelectedAnalyseData = useCallback(
+      async (id) => {
+         try {
+            setIsLoading(true);
+            setIsStoreUpdated(false);
+            const analyseData = await fetchAnalyse(id);
+            setSelectedGeneralAnalyseData({
+               analyse: {
+                  name: analyseData.data.name,
+                  description: analyseData.data.description,
+                  tags: analyseData.data.tags,
+                  createdAt: analyseData.data.created_at,
+                  updatedAt: analyseData.data.updated_at,
+               },
+               requestForProposal: analyseData.data.rp_analyse,
+               proposal: analyseData.data.p_analyse,
+               ranking: analyseData.data.analyse.ranking,
+               reasonForOverallSelection:
+                  analyseData.data.analyse.reasonForOverallSelection,
+               overallSuitableProposal:
+                  analyseData.data.analyse.overallSuitableProposal,
+               proposalAnalyse: analyseData.data.analyse.proposalAnalyse,
+            });
+            setSelectedFinancialAnalyseData({
+               financialAnalyse: analyseData.data.analyse.financialAnalyse,
+               proposal: analyseData.data.p_analyse,
+               financialRanking: analyseData.data.analyse.financialRanking,
+               overallFinanciallySuitableProposal:
+                  analyseData.data.analyse.overallFinanciallySuitableProposal,
+               proposalAnalyse: analyseData.data.analyse.proposalAnalyse,
+               reasonForFinancialSelection:
+                  analyseData.data.analyse.reasonForFinancialSelection,
+            });
+            setSelectedRiskAnalyseData({
+               riskAssessmentRanking:
+                  analyseData.data.analyse.riskAssessmentRanking,
+               proposal: analyseData.data.p_analyse,
+               overallRiskAssessmentSuitableProposal:
+                  analyseData.data.analyse
+                     .overallRiskAssessmentSuitableProposal,
+               proposalAnalyse: analyseData.data.analyse.proposalAnalyse,
+               reasonForRiskAssessmentSelection:
+                  analyseData.data.analyse.reasonForRiskAssessmentSelection,
+            });
+            setIsLoading(false);
+            setIsStoreUpdated(true);
+         } catch (error) {
+            console.error(error);
+            setIsLoading(false);
+         }
+      },
+      [
+         setSelectedFinancialAnalyseData,
+         setSelectedGeneralAnalyseData,
+         setSelectedRiskAnalyseData,
+      ]
+   );
 
-   const fetchSelectedAnalyseData = async (id) => {
-      try {
-         setIsLoading(true);
-         setIsStoreUpdated(false);
-         const analyseData = await fetchAnalyse(id);
-         setSelectedGeneralAnalyseData({
-            analyse: {
-               name: analyseData.data.name,
-               description: analyseData.data.description,
-               tags: analyseData.data.tags,
-               createdAt: analyseData.data.created_at,
-               updatedAt: analyseData.data.updated_at,
-            },
-            requestForProposal: analyseData.data.rp_analyse,
-            proposal: analyseData.data.p_analyse,
-            ranking: analyseData.data.analyse.ranking,
-            reasonForOverallSelection:
-               analyseData.data.analyse.reasonForOverallSelection,
-            overallSuitableProposal:
-               analyseData.data.analyse.overallSuitableProposal,
-            proposalAnalyse: analyseData.data.analyse.proposalAnalyse,
-         });
-         setSelectedFinancialAnalyseData({
-            financialAnalyse: analyseData.data.analyse.financialAnalyse,
-            proposal: analyseData.data.p_analyse,
-            financialRanking: analyseData.data.analyse.financialRanking,
-            overallFinanciallySuitableProposal:
-               analyseData.data.analyse.overallFinanciallySuitableProposal,
-            proposalAnalyse: analyseData.data.analyse.proposalAnalyse,
-            reasonForFinancialSelection:
-               analyseData.data.analyse.reasonForFinancialSelection,
-         });
-         setSelectedRiskAnalyseData({
-            riskAssessmentRanking:
-               analyseData.data.analyse.riskAssessmentRanking,
-            proposal: analyseData.data.p_analyse,
-            overallRiskAssessmentSuitableProposal:
-               analyseData.data.analyse.overallRiskAssessmentSuitableProposal,
-            proposalAnalyse: analyseData.data.analyse.proposalAnalyse,
-            reasonForRiskAssessmentSelection:
-               analyseData.data.analyse.reasonForRiskAssessmentSelection,
-         });
-         setIsLoading(false);
-         setIsStoreUpdated(true);
-      } catch (error) {
-         console.error(error);
-         setIsLoading(false);
-      }
-   };
+   const handleAnalyseSelection = useCallback(
+      async (id) => {
+         setAnalyseId(id);
+         await fetchSelectedAnalyseData(id);
+      },
+      [fetchSelectedAnalyseData]
+   );
 
    useEffect(() => {
       if (!useEffectRan.current) {
@@ -134,7 +145,7 @@ const AnalysisPage = () => {
          fetchAnalyseData();
          useEffectRan.current = true;
       }
-   }, [analyseIdFromUrl]);
+   }, [analyseIdFromUrl, fetchSelectedAnalyseData]);
 
    // Handle hash fragment scrolling after data is loaded
    useEffect(() => {

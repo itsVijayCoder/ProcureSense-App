@@ -8,7 +8,7 @@ import Step4Page from "@/components/pages/step4";
 import { Card, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, ChevronLeft, RotateCw, Save } from "lucide-react";
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { addAnalyseStore } from "@/stores/addAnalyse";
 import { toast } from "sonner";
 import {
@@ -57,26 +57,32 @@ const AddAnalysisPage = () => {
       setCurrentStep(currentStep - 1);
    };
 
-   const fetchResquestForProposalData = async (id) => {
-      try {
-         const response = await fetchResquestForProposal(id);
-         setRequestForProposalData(response.data.rp);
-         setAnalyseData(response.data.analyse);
-      } catch (error) {
-         console.error(error);
-         toast.error("Error while fetching request for proposal data !");
-      }
-   };
+   const fetchResquestForProposalData = useCallback(
+      async (id) => {
+         try {
+            const response = await fetchResquestForProposal(id);
+            setRequestForProposalData(response.data.rp);
+            setAnalyseData(response.data.analyse);
+         } catch (error) {
+            console.error(error);
+            toast.error("Error while fetching request for proposal data !");
+         }
+      },
+      [setAnalyseData, setRequestForProposalData]
+   );
 
-   const fetchProposalData = async (id) => {
-      try {
-         const response = await fetchProposal(id);
-         setProposalData(response.data);
-      } catch (error) {
-         console.error(error);
-         toast.error("Error while fetching proposal data !");
-      }
-   };
+   const fetchProposalData = useCallback(
+      async (id) => {
+         try {
+            const response = await fetchProposal(id);
+            setProposalData(response.data);
+         } catch (error) {
+            console.error(error);
+            toast.error("Error while fetching proposal data !");
+         }
+      },
+      [setProposalData]
+   );
 
    const handleStep1Next = async () => {
       setIsButtonLoading(true);
@@ -247,7 +253,7 @@ const AddAnalysisPage = () => {
          useEffectRan.current = true;
          handleEditAnalyse();
       }
-   }, []);
+   }, [analyseId, fetchProposalData, fetchResquestForProposalData, stage]);
 
    return (
       <div className='flex flex-col gap-3 w-full item-center justify-center'>
