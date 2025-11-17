@@ -84,6 +84,14 @@ const AddAnalysisPage = () => {
       [setProposalData]
    );
 
+   const handleAnalyseDataChange = useCallback((analyseData) => {
+      setUpdatedAnalyseData(analyseData);
+   }, []);
+
+   const handleRequestForProposalDataChange = useCallback((requestForProposalData) => {
+      setUpdatedRequestForProposalData(requestForProposalData);
+   }, []);
+
    const handleStep1Next = async () => {
       setIsButtonLoading(true);
       let payload = new FormData();
@@ -307,16 +315,8 @@ const AddAnalysisPage = () => {
                {currentStep === 2 && (
                   <Card className='w-[80%]'>
                      <Step2Page
-                        handleAnalyseDataChange={(analyseData) => {
-                           setUpdatedAnalyseData(analyseData);
-                        }}
-                        handleRequestForProposalDataChange={(
-                           requestForProposalData
-                        ) => {
-                           setUpdatedRequestForProposalData(
-                              requestForProposalData
-                           );
-                        }}
+                        handleAnalyseDataChange={handleAnalyseDataChange}
+                        handleRequestForProposalDataChange={handleRequestForProposalDataChange}
                      />
                      <CardFooter className='flex flex-row w-full justify-between mt-4'>
                         <Button

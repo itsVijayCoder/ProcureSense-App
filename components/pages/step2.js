@@ -12,7 +12,7 @@ import { X, Plus, Undo } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { addAnalyseStore } from "@/stores/addAnalyse";
@@ -25,8 +25,6 @@ const Step2Page = ({
 }) => {
    const { analyseData, requestForProposalData } = addAnalyseStore();
    const { setAnalyseData, setRequestForProposalData } = addAnalyseStore();
-
-   console.log("requestForProposalData", requestForProposalData);
 
    const useEffectRan = useRef(false);
 
@@ -45,6 +43,25 @@ const Step2Page = ({
    const [contact, setContact] = useState("");
 
    const [tagName, setTagName] = useState("");
+
+   // Memoize array transformations to prevent unnecessary re-renders
+   const deliveryTermsArray = useMemo(() => {
+      return deliveryTerms.length > 0
+         ? deliveryTerms.split("\n").filter((term) => term.trim() !== "")
+         : [];
+   }, [deliveryTerms]);
+
+   const paymentTermsArray = useMemo(() => {
+      return paymentTerms.length > 0
+         ? paymentTerms.split("\n").filter((term) => term.trim() !== "")
+         : [];
+   }, [paymentTerms]);
+
+   const termsConditionsArray = useMemo(() => {
+      return termsConditions.length > 0
+         ? termsConditions.split("\n").filter((term) => term.trim() !== "")
+         : [];
+   }, [termsConditions]);
 
    const setAnalyseDataState = useCallback(() => {
       if (analyseData) {
@@ -139,18 +156,9 @@ const Step2Page = ({
          companyName: companyName,
          releaseDate: releaseDate,
          companyAddress: companyAddress,
-         deliveryTerms:
-            deliveryTerms.length > 0
-               ? deliveryTerms.split("\n").filter((term) => term !== "")
-               : requestForProposalData?.deliveryTerms,
-         paymentTerms:
-            paymentTerms.length > 0
-               ? paymentTerms.split("\n").filter((term) => term !== "")
-               : requestForProposalData?.paymentTerms,
-         termsConditions:
-            termsConditions.length > 0
-               ? termsConditions.split("\n").filter((term) => term !== "")
-               : requestForProposalData?.termsConditions,
+         deliveryTerms: deliveryTermsArray,
+         paymentTerms: paymentTermsArray,
+         termsConditions: termsConditionsArray,
          scopeOfWork: scopeOfWork,
          contactInformation: {
             raisedBy: rasiedBy,
@@ -161,12 +169,11 @@ const Step2Page = ({
       companyName,
       releaseDate,
       companyAddress,
-      deliveryTerms,
+      deliveryTermsArray,
+      paymentTermsArray,
+      termsConditionsArray,
       handleRequestForProposalDataChange,
-      paymentTerms,
-      requestForProposalData,
       scopeOfWork,
-      termsConditions,
       rasiedBy,
       contact,
    ]);

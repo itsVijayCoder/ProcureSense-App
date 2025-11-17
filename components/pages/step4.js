@@ -21,6 +21,7 @@ import {
    RotateCw,
 } from "lucide-react";
 import { addAnalyseStore } from "@/stores/addAnalyse";
+import { toast } from "sonner";
 
 const Step4Page = ({
    handleProposalAnalyseDataChange,
@@ -28,17 +29,23 @@ const Step4Page = ({
    handlePrevious,
    isLoading,
 }) => {
-   const { proposalData, setProposalData: updateStoreProposalData } = addAnalyseStore();
+   const {
+      proposalData,
+      setProposalData: updateStoreProposalData,
+      requestForProposalData,
+   } = addAnalyseStore();
    const totalProposals = Array.isArray(proposalData) ? proposalData.length : 0;
    const [currentProposal, setCurrentProposal] = useState(0);
    const [currentProposalData, setCurrentProposalData] = useState(
       totalProposals > 0 ? proposalData[0] : null
    );
-   
+
    // Track if we're currently syncing to prevent infinite loops
    const isSyncingRef = useRef(false);
    // Track the last loaded proposal index to detect navigation
    const lastLoadedProposalRef = useRef(-1);
+   // Track if we've shown the warning for this proposal
+   const hasShownWarningRef = useRef(new Set());
 
    const [companyName, setCompanyName] = useState("");
    const [submissionDate, setSubmissionDate] = useState("");
@@ -53,6 +60,95 @@ const Step4Page = ({
    const [keyBenefits, setKeyBenefits] = useState("");
    const [contactDetail, setContactDetail] = useState("");
    const [submittedBy, setSubmittedBy] = useState("");
+
+   // Levenshtein distance algorithm for fuzzy string matching
+   const levenshteinDistance = useCallback((str1, str2) => {
+      const len1 = str1.length;
+      const len2 = str2.length;
+      const matrix = Array(len1 + 1)
+         .fill(null)
+         .map(() => Array(len2 + 1).fill(0));
+
+      for (let i = 0; i <= len1; i++) matrix[i][0] = i;
+      for (let j = 0; j <= len2; j++) matrix[0][j] = j;
+
+      for (let i = 1; i <= len1; i++) {
+         for (let j = 1; j <= len2; j++) {
+            const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+            matrix[i][j] = Math.min(
+               matrix[i - 1][j] + 1, // Deletion
+               matrix[i][j - 1] + 1, // Insertion
+               matrix[i - 1][j - 1] + cost // Substitution
+            );
+         }
+      }
+
+      return matrix[len1][len2];
+   }, []);
+
+   // Calculate similarity percentage between two strings
+   const calculateSimilarity = useCallback(
+      (str1, str2) => {
+         if (!str1 || !str2) return 0;
+
+         const normalize = (str) =>
+            str
+               .toLowerCase()
+               .trim()
+               .replace(/[^\w\s]/g, "") // Remove punctuation
+               .replace(/\s+/g, " "); // Normalize whitespace
+
+         const norm1 = normalize(str1);
+         const norm2 = normalize(str2);
+
+         if (norm1 === norm2) return 100;
+
+         const distance = levenshteinDistance(norm1, norm2);
+         const maxLen = Math.max(norm1.length, norm2.length);
+
+         if (maxLen === 0) return 100;
+
+         return ((maxLen - distance) / maxLen) * 100;
+      },
+      [levenshteinDistance]
+   );
+
+   // Utility function to check if proposal company name matches RFP client name
+   // Returns true if similarity is >= 40%
+   const isMatchingClientName = useCallback(
+      (proposalName, rfpClientName) => {
+         if (!proposalName || !rfpClientName) return false;
+
+         const normalize = (str) =>
+            str
+               .toLowerCase()
+               .trim()
+               .replace(/[^\w\s]/g, "") // Remove punctuation
+               .replace(/\s+/g, " "); // Normalize whitespace
+
+         const normalizedProposal = normalize(proposalName);
+         const normalizedRfp = normalize(rfpClientName);
+
+         // Fast path: exact substring match
+         if (
+            normalizedProposal.includes(normalizedRfp) ||
+            normalizedRfp.includes(normalizedProposal)
+         ) {
+            return true;
+         }
+
+         // Slow path: fuzzy matching with 40% threshold
+         const similarity = calculateSimilarity(proposalName, rfpClientName);
+         return similarity >= 40;
+      },
+      [calculateSimilarity]
+   );
+
+   const rfpClientName = requestForProposalData?.companyName || "";
+   const hasClientNameConflict = isMatchingClientName(
+      companyName,
+      rfpClientName
+   );
 
    const toArrayFromMultiline = useCallback((value, fallback = []) => {
       if (typeof value === "string") {
@@ -113,12 +209,12 @@ const Step4Page = ({
       if (totalProposals === 0 || isSyncingRef.current) {
          return;
       }
-      
+
       const existingProposal = proposalData[currentProposal];
       if (!existingProposal) {
          return;
       }
-      
+
       const updatedProposal = {
          ...existingProposal,
          companyName,
@@ -157,12 +253,12 @@ const Step4Page = ({
       const payload = proposalData.map((proposal, index) =>
          index === currentProposal ? updatedProposal : proposal
       );
-      
+
       // Prevent re-triggering this effect when we update the store
       isSyncingRef.current = true;
       updateStoreProposalData(payload);
       handleProposalAnalyseDataChange(payload);
-      
+
       // Reset sync flag after a brief delay
       setTimeout(() => {
          isSyncingRef.current = false;
@@ -193,18 +289,49 @@ const Step4Page = ({
       if (totalProposals === 0) {
          return;
       }
-      
+
       // Ensure current changes are synced before navigating
       syncChangesToStore();
-      
+
       if (currentProposal >= totalProposals - 1) {
+         // Final validation before starting analysis
+         if (rfpClientName) {
+            const conflictingProposals = proposalData
+               .map((proposal, index) => ({
+                  index,
+                  name: proposal.companyName,
+                  hasConflict: isMatchingClientName(
+                     proposal.companyName,
+                     rfpClientName
+                  ),
+               }))
+               .filter((p) => p.hasConflict);
+
+            if (conflictingProposals.length > 0) {
+               const proposalNumbers = conflictingProposals
+                  .map((p) => p.index + 1)
+                  .join(", ");
+               const message =
+                  conflictingProposals.length === 1
+                     ? `Proposal ${proposalNumbers} has a company name matching the RFP client "${rfpClientName}". This may indicate incorrect data extraction.\n\nProposals should be from vendors/suppliers, not the requesting company.\n\nProceed anyway?`
+                     : `Proposals ${proposalNumbers} have company names matching the RFP client "${rfpClientName}". This may indicate incorrect data extraction.\n\nProposals should be from vendors/suppliers, not the requesting company.\n\nProceed anyway?`;
+
+               if (!window.confirm(message)) {
+                  toast.info(
+                     "Please review and correct the company names before proceeding."
+                  );
+                  return;
+               }
+            }
+         }
+
          // Small delay to ensure sync completes before final submission
          setTimeout(() => {
             handleNext();
          }, 50);
          return;
       }
-      
+
       // Mark that we're about to navigate to force reload of next proposal
       lastLoadedProposalRef.current = -1;
       setCurrentProposal((prev) => prev + 1);
@@ -214,17 +341,17 @@ const Step4Page = ({
       if (totalProposals === 0) {
          return;
       }
-      
+
       // Ensure current changes are synced before navigating
       syncChangesToStore();
-      
+
       if (currentProposal === 0) {
          setTimeout(() => {
             handlePrevious();
          }, 50);
          return;
       }
-      
+
       // Mark that we're about to navigate to force reload of previous proposal
       lastLoadedProposalRef.current = -1;
       setCurrentProposal((prev) => prev - 1);
@@ -239,11 +366,19 @@ const Step4Page = ({
          const updatedScopeOfWork = prevScopeOfWork.map((scope, index) => {
             if (index === idx) {
                // Convert numeric fields from string to number for internal state
-               const numericFields = ['quantity', 'unit_price', 'price_before_taxes', 'taxes', 'total_price'];
-               const finalValue = numericFields.includes(key) 
-                  ? (value === '' ? 0 : parseFloat(value) || 0)
+               const numericFields = [
+                  "quantity",
+                  "unit_price",
+                  "price_before_taxes",
+                  "taxes",
+                  "total_price",
+               ];
+               const finalValue = numericFields.includes(key)
+                  ? value === ""
+                     ? 0
+                     : parseFloat(value) || 0
                   : value;
-               
+
                return { ...scope, [key]: finalValue };
             }
             return scope;
@@ -256,36 +391,63 @@ const Step4Page = ({
       if (totalProposals === 0) {
          return;
       }
-      
+
       const safeIndex = Math.min(currentProposal, totalProposals - 1);
       if (safeIndex !== currentProposal) {
          setCurrentProposal(safeIndex);
          return;
       }
-      
+
       // Only reload form if we've navigated to a different proposal
-      if (lastLoadedProposalRef.current === safeIndex && !isSyncingRef.current) {
+      if (
+         lastLoadedProposalRef.current === safeIndex &&
+         !isSyncingRef.current
+      ) {
          return;
       }
-      
+
       const proposal = proposalData[safeIndex];
       if (!proposal) {
          return;
       }
-      
+
       // Mark this proposal as loaded
       lastLoadedProposalRef.current = safeIndex;
       setCurrentProposalData(proposal);
-      
+
+      // Check for client name conflict and show warning (only once per proposal)
+      const conflictKey = `${safeIndex}-${proposal.companyName}`;
+      if (
+         rfpClientName &&
+         proposal.companyName &&
+         isMatchingClientName(proposal.companyName, rfpClientName) &&
+         !hasShownWarningRef.current.has(conflictKey)
+      ) {
+         hasShownWarningRef.current.add(conflictKey);
+         toast.warning(
+            `Proposal ${safeIndex + 1}: Company name "${
+               proposal.companyName
+            }" matches RFP client. Please verify this is a vendor, not the requesting company.`,
+            { duration: 5000 }
+         );
+      }
+
       // Temporarily disable sync while loading form
       isSyncingRef.current = true;
       applyProposalToForm(proposal);
-      
+
       // Re-enable sync after form is loaded
       setTimeout(() => {
          isSyncingRef.current = false;
       }, 100);
-   }, [applyProposalToForm, currentProposal, proposalData, totalProposals]);
+   }, [
+      applyProposalToForm,
+      currentProposal,
+      proposalData,
+      totalProposals,
+      rfpClientName,
+      isMatchingClientName,
+   ]);
 
    useEffect(() => {
       syncChangesToStore();
@@ -332,15 +494,35 @@ const Step4Page = ({
                                     No company name available
                                  </Badge>
                               )}
+                              {hasClientNameConflict && companyName !== "" && (
+                                 <Badge
+                                    variant='outline'
+                                    className='bg-yellow-100 text-yellow-800 border-yellow-300'
+                                 >
+                                    ⚠️ Matches RFP Client
+                                 </Badge>
+                              )}
                            </Label>
                            <Input
                               id='company_name'
-                              placeholder='Enter company name'
+                              placeholder='Enter vendor/supplier company name'
                               value={companyName}
                               onChange={(e) => {
                                  setCompanyName(e.target.value);
                               }}
+                              className={
+                                 hasClientNameConflict
+                                    ? "border-yellow-500 focus:border-yellow-600"
+                                    : ""
+                              }
                            />
+                           {hasClientNameConflict && companyName !== "" && (
+                              <p className='text-sm text-yellow-700 mt-1'>
+                                 ⚠️ This company name matches the RFP client "
+                                 {rfpClientName}". Proposals should be from
+                                 vendors/suppliers, not the requesting company.
+                              </p>
+                           )}
                         </div>
                         <div className='grid gap-3 w-2/6'>
                            <Label
