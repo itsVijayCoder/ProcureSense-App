@@ -198,9 +198,22 @@ const AddAnalysisPage = () => {
       try {
          setIsButtonLoading(true);
 
+         // Convert numeric fields in scopeOfWork to strings for backend validation
+         const convertedProposalData = updatedProposalData.map(proposal => ({
+            ...proposal,
+            scopeOfWork: proposal.scopeOfWork.map(scope => ({
+               ...scope,
+               quantity: String(scope.quantity || 0),
+               unit_price: String(scope.unit_price || 0),
+               price_before_taxes: String(scope.price_before_taxes || 0),
+               taxes: String(scope.taxes || 0),
+               total_price: String(scope.total_price || 0)
+            }))
+         }));
+
          let proposalPayload = {
             id: analyseId,
-            p_analyse: updatedProposalData,
+            p_analyse: convertedProposalData,
          };
 
          try {
@@ -208,8 +221,10 @@ const AddAnalysisPage = () => {
          } catch (error) {
             console.error(error);
             toast.error(
-               "Error while saving analysis information ! Please try again."
+               "Error while saving proposal changes! Please fix the errors and try again."
             );
+            setIsButtonLoading(false);
+            return; // Stop execution if edit fails
          }
 
          try {

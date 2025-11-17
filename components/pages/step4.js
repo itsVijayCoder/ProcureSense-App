@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
    ChevronRight,
    ChevronLeft,
@@ -28,12 +28,17 @@ const Step4Page = ({
    handlePrevious,
    isLoading,
 }) => {
-   const { proposalData } = addAnalyseStore();
+   const { proposalData, setProposalData: updateStoreProposalData } = addAnalyseStore();
    const totalProposals = Array.isArray(proposalData) ? proposalData.length : 0;
    const [currentProposal, setCurrentProposal] = useState(0);
    const [currentProposalData, setCurrentProposalData] = useState(
       totalProposals > 0 ? proposalData[0] : null
    );
+   
+   // Track if we're currently syncing to prevent infinite loops
+   const isSyncingRef = useRef(false);
+   // Track the last loaded proposal index to detect navigation
+   const lastLoadedProposalRef = useRef(-1);
 
    const [companyName, setCompanyName] = useState("");
    const [submissionDate, setSubmissionDate] = useState("");
@@ -49,27 +54,18 @@ const Step4Page = ({
    const [contactDetail, setContactDetail] = useState("");
    const [submittedBy, setSubmittedBy] = useState("");
 
-   const handleNextProposal = () => {
-      if (totalProposals === 0) {
-         return;
+   const toArrayFromMultiline = useCallback((value, fallback = []) => {
+      if (typeof value === "string") {
+         const trimmed = value
+            .split("\n")
+            .map((item) => item.trim())
+            .filter((item) => item.length > 0);
+         if (trimmed.length > 0) {
+            return trimmed;
+         }
       }
-      if (currentProposal >= totalProposals - 1) {
-         handleNext();
-         return;
-      }
-      setCurrentProposal((prev) => prev + 1);
-   };
-
-   const handlePreviousProposal = () => {
-      if (totalProposals === 0) {
-         return;
-      }
-      if (currentProposal === 0) {
-         handlePrevious();
-         return;
-      }
-      setCurrentProposal((prev) => prev - 1);
-   };
+      return Array.isArray(fallback) ? fallback : [];
+   }, []);
 
    const applyProposalToForm = useCallback((proposal) => {
       if (!proposal) {
@@ -112,57 +108,17 @@ const Step4Page = ({
       setSubmittedBy(proposal?.contactInformation?.submittedBy || "");
    }, []);
 
-   const toArrayFromMultiline = useCallback((value, fallback = []) => {
-      if (typeof value === "string") {
-         const trimmed = value
-            .split("\n")
-            .map((item) => item.trim())
-            .filter((item) => item.length > 0);
-         if (trimmed.length > 0) {
-            return trimmed;
-         }
-      }
-      return Array.isArray(fallback) ? fallback : [];
-   }, []);
-
-   const handleRestoreDefault = () => {
-      applyProposalToForm(currentProposalData);
-   };
-
-   const handleScopeOfWorkChange = (idx, key, value) => {
-      setScopeOfWork((prevScopeOfWork) => {
-         const updatedScopeOfWork = prevScopeOfWork.map((scope, index) =>
-            index === idx ? { ...scope, [key]: value } : scope
-         );
-         return updatedScopeOfWork;
-      });
-   };
-
-   useEffect(() => {
-      if (totalProposals === 0) {
+   // Sync form changes to store and parent - defined early so navigation handlers can use it
+   const syncChangesToStore = useCallback(() => {
+      if (totalProposals === 0 || isSyncingRef.current) {
          return;
       }
-      const safeIndex = Math.min(currentProposal, totalProposals - 1);
-      if (safeIndex !== currentProposal) {
-         setCurrentProposal(safeIndex);
-         return;
-      }
-      const proposal = proposalData[safeIndex];
-      if (!proposal) {
-         return;
-      }
-      setCurrentProposalData(proposal);
-      applyProposalToForm(proposal);
-   }, [applyProposalToForm, currentProposal, proposalData, totalProposals]);
-
-   useEffect(() => {
-      if (totalProposals === 0) {
-         return;
-      }
+      
       const existingProposal = proposalData[currentProposal];
       if (!existingProposal) {
          return;
       }
+      
       const updatedProposal = {
          ...existingProposal,
          companyName,
@@ -201,7 +157,16 @@ const Step4Page = ({
       const payload = proposalData.map((proposal, index) =>
          index === currentProposal ? updatedProposal : proposal
       );
+      
+      // Prevent re-triggering this effect when we update the store
+      isSyncingRef.current = true;
+      updateStoreProposalData(payload);
       handleProposalAnalyseDataChange(payload);
+      
+      // Reset sync flag after a brief delay
+      setTimeout(() => {
+         isSyncingRef.current = false;
+      }, 0);
    }, [
       companyName,
       submissionDate,
@@ -217,11 +182,114 @@ const Step4Page = ({
       scopeOfWork,
       keyBenefits,
       currentProposal,
-      handleProposalAnalyseDataChange,
       proposalData,
-      toArrayFromMultiline,
       totalProposals,
+      toArrayFromMultiline,
+      updateStoreProposalData,
+      handleProposalAnalyseDataChange,
    ]);
+
+   const handleNextProposal = () => {
+      if (totalProposals === 0) {
+         return;
+      }
+      
+      // Ensure current changes are synced before navigating
+      syncChangesToStore();
+      
+      if (currentProposal >= totalProposals - 1) {
+         // Small delay to ensure sync completes before final submission
+         setTimeout(() => {
+            handleNext();
+         }, 50);
+         return;
+      }
+      
+      // Mark that we're about to navigate to force reload of next proposal
+      lastLoadedProposalRef.current = -1;
+      setCurrentProposal((prev) => prev + 1);
+   };
+
+   const handlePreviousProposal = () => {
+      if (totalProposals === 0) {
+         return;
+      }
+      
+      // Ensure current changes are synced before navigating
+      syncChangesToStore();
+      
+      if (currentProposal === 0) {
+         setTimeout(() => {
+            handlePrevious();
+         }, 50);
+         return;
+      }
+      
+      // Mark that we're about to navigate to force reload of previous proposal
+      lastLoadedProposalRef.current = -1;
+      setCurrentProposal((prev) => prev - 1);
+   };
+
+   const handleRestoreDefault = () => {
+      applyProposalToForm(currentProposalData);
+   };
+
+   const handleScopeOfWorkChange = (idx, key, value) => {
+      setScopeOfWork((prevScopeOfWork) => {
+         const updatedScopeOfWork = prevScopeOfWork.map((scope, index) => {
+            if (index === idx) {
+               // Convert numeric fields from string to number for internal state
+               const numericFields = ['quantity', 'unit_price', 'price_before_taxes', 'taxes', 'total_price'];
+               const finalValue = numericFields.includes(key) 
+                  ? (value === '' ? 0 : parseFloat(value) || 0)
+                  : value;
+               
+               return { ...scope, [key]: finalValue };
+            }
+            return scope;
+         });
+         return updatedScopeOfWork;
+      });
+   };
+
+   useEffect(() => {
+      if (totalProposals === 0) {
+         return;
+      }
+      
+      const safeIndex = Math.min(currentProposal, totalProposals - 1);
+      if (safeIndex !== currentProposal) {
+         setCurrentProposal(safeIndex);
+         return;
+      }
+      
+      // Only reload form if we've navigated to a different proposal
+      if (lastLoadedProposalRef.current === safeIndex && !isSyncingRef.current) {
+         return;
+      }
+      
+      const proposal = proposalData[safeIndex];
+      if (!proposal) {
+         return;
+      }
+      
+      // Mark this proposal as loaded
+      lastLoadedProposalRef.current = safeIndex;
+      setCurrentProposalData(proposal);
+      
+      // Temporarily disable sync while loading form
+      isSyncingRef.current = true;
+      applyProposalToForm(proposal);
+      
+      // Re-enable sync after form is loaded
+      setTimeout(() => {
+         isSyncingRef.current = false;
+      }, 100);
+   }, [applyProposalToForm, currentProposal, proposalData, totalProposals]);
+
+   useEffect(() => {
+      syncChangesToStore();
+   }, [syncChangesToStore]);
 
    return (
       <div>
@@ -401,6 +469,8 @@ const Step4Page = ({
                               <Label htmlFor='quantity'>Quantity</Label>
                               <Input
                                  id='quantity'
+                                 type='number'
+                                 step='1'
                                  placeholder='Quantity'
                                  value={scope.quantity}
                                  onChange={(e) => {
@@ -431,7 +501,9 @@ const Step4Page = ({
                               <Label htmlFor='description'>Per unit rate</Label>
                               <Input
                                  id='unit_price'
-                                 placeholder='Pre unit rate'
+                                 type='number'
+                                 step='0.01'
+                                 placeholder='Per unit rate'
                                  value={scope.unit_price}
                                  onChange={(e) => {
                                     handleScopeOfWorkChange(
@@ -446,6 +518,8 @@ const Step4Page = ({
                               <Label htmlFor='description'>Bfr Taxes</Label>
                               <Input
                                  id='price_before_taxes'
+                                 type='number'
+                                 step='0.01'
                                  placeholder='Before Taxes'
                                  value={scope.price_before_taxes}
                                  onChange={(e) => {
@@ -461,6 +535,8 @@ const Step4Page = ({
                               <Label htmlFor='description'>Taxes</Label>
                               <Input
                                  id='taxes'
+                                 type='number'
+                                 step='0.01'
                                  placeholder='Taxes'
                                  value={scope.taxes}
                                  onChange={(e) => {
@@ -476,6 +552,8 @@ const Step4Page = ({
                               <Label htmlFor='description'>Total Amount</Label>
                               <Input
                                  id='total_price'
+                                 type='number'
+                                 step='0.01'
                                  placeholder='Total Amount'
                                  value={scope.total_price}
                                  onChange={(e) => {
