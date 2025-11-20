@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link"
+import Image from "next/image"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -38,7 +39,17 @@ const LoginPage = () => {
     }
 
     return (
-        <div className="mx-auto grid w-[400px] gap-6">
+        <div className="mx-auto grid w-[400px] gap-4">
+            <div className="flex justify-center mb-4">
+                <Image
+                    src="/images/redaa-logo.png"
+                    alt="Redaa Logo"
+                    width={180}
+                    height={60}
+                    priority
+                    className="object-contain"
+                />
+            </div>
             <div className="grid gap-2 text-center">
                 <h1 className="text-3xl font-bold">Login</h1>
                 <p className="text-balance text-muted-foreground">
@@ -87,7 +98,7 @@ const LoginPage = () => {
                     }
                 </Button>
             </div>
-            <div className="mt-4 text-center text-sm">
+            <div className="text-center text-sm">
                 Don&apos;t have an account?{" "}
                 <Link href="/signup" className="underline">
                     Sign up

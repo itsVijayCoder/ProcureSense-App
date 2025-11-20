@@ -2,8 +2,8 @@ import Image from "next/image"
 
 const AuthenticationLayout = ({ children }) => {
   return (
-    <div className="w-full lg:grid lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[800px]">
-      <div className="flex items-center justify-center py-12">
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
+      <div className="flex items-center justify-center py-8">
         {children}
       </div>
       <div className="hidden bg-muted lg:block">
