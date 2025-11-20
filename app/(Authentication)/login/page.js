@@ -39,15 +39,15 @@ const LoginPage = () => {
     }
 
     return (
-        <div className="mx-auto grid w-[400px] gap-4">
-            <div className="flex justify-center mb-4">
+        <div className="mx-auto container grid w-[500px] gap-4">
+            <div className="flex justify-center mb-2">
                 <Image
                     src="/images/redaa-logo.png"
                     alt="Redaa Logo"
-                    width={180}
-                    height={60}
+                    width={220}
+                    height={80}
                     priority
-                    className="object-contain"
+                    className="object-fill"
                 />
             </div>
             <div className="grid gap-2 text-center">
